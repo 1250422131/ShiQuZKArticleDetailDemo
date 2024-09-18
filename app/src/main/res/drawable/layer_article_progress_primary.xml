@@ -8,10 +8,13 @@
         </shape>
     </item>
     <item android:id="@android:id/progress">
-        <shape android:shape="rectangle">
-            <size android:height="5dp"/> <!-- 与 ProgressBar 高度一致 -->
-            <solid android:color="@color/primary" />
-            <corners android:radius="6dp" />
-        </shape>
+        <clip>
+            <shape android:shape="rectangle">
+                <size android:height="5dp"/> <!-- 与 ProgressBar 高度一致 -->
+                <solid android:color="@color/primary" />
+                <corners android:radius="6dp" />
+            </shape>
+        </clip>
+
     </item>
 </layer-list>

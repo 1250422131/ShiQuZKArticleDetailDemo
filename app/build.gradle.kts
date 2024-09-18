@@ -39,6 +39,10 @@ android {
 }
 
 dependencies {
+    // flex
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
+    // 媒体播放
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
     // 图片
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // 依赖注入
