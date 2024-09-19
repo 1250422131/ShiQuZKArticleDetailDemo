@@ -1,10 +1,10 @@
 package com.imcys.shiquzkarticledetaildemo.ui.article.detail
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
@@ -19,7 +19,10 @@ import com.imcys.shiquzkarticledetaildemo.databinding.FragmentArticleDetailConte
 import com.imcys.shiquzkarticledetaildemo.model.ArticleDetailData
 
 
-class ArticleDetailContentFragment(private val content: ArticleDetailData.Content) :
+class ArticleDetailContentFragment(
+    private val content: ArticleDetailData.Content,
+    private val viewModel: ArticleDetailViewModel
+) :
     BaseFragment<FragmentArticleDetailContentBinding>() {
 
 
@@ -35,7 +38,21 @@ class ArticleDetailContentFragment(private val content: ArticleDetailData.Conten
         savedInstanceState: Bundle?
     ): View {
         initView()
+        bindLiveData()
         return binding.root
+    }
+
+    private fun bindLiveData() {
+        viewModel.currentPlayerTime.observe(viewLifecycleOwner) { currentTime ->
+            val dyedIndex =
+                content.sentenceByXFList.indexOfFirst  {
+                    it.wb <= currentTime && it.we >= currentTime
+                }
+            val oldIndex = articleDetailContentAdapter.dyedIndex
+            articleDetailContentAdapter.dyedIndex = dyedIndex
+            articleDetailContentAdapter.notifyItemChanged(oldIndex)
+            articleDetailContentAdapter.notifyItemChanged(dyedIndex)
+        }
     }
 
     private fun initView() {
@@ -46,6 +63,8 @@ class ArticleDetailContentFragment(private val content: ArticleDetailData.Conten
     private fun initContentRecyclerView() {
         binding.apply {
             articleDetailContentRv.adapter = articleDetailContentAdapter
+            // 禁止动画
+            articleDetailContentRv.itemAnimator = null
             articleDetailContentRv.layoutManager = FlexboxLayoutManager(requireContext()).apply {
                 flexDirection = FlexDirection.ROW
                 flexWrap = FlexWrap.WRAP
@@ -69,7 +88,6 @@ class ArticleDetailContentFragment(private val content: ArticleDetailData.Conten
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(articleDetailContentCoverImage)
 
-
         }
     }
 
@@ -79,7 +97,7 @@ class ArticleDetailContentFragment(private val content: ArticleDetailData.Conten
     companion object {
 
         @JvmStatic
-        fun newInstance(content: ArticleDetailData.Content) =
-            ArticleDetailContentFragment(content)
+        fun newInstance(content: ArticleDetailData.Content, viewModel: ArticleDetailViewModel) =
+            ArticleDetailContentFragment(content, viewModel)
     }
 }

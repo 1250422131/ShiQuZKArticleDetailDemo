@@ -51,11 +51,12 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
         viewModel.articleDetailData.observe(this) {
             val fragments = mutableListOf<Fragment>()
             it.contentList.forEach { content ->
-                fragments.add(ArticleDetailContentFragment.newInstance(content))
+                fragments.add(ArticleDetailContentFragment.newInstance(content,viewModel))
             }
             binding.apply {
                 viewPage2Adapter.fragments = fragments
                 viewPage2Adapter.notifyDataSetChanged()
+                articleDetailTitleTv.text = it.title
             }
         }
 

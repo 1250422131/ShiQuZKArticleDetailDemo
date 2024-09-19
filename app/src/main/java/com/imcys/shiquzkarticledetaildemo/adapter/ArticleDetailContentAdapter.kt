@@ -3,6 +3,7 @@ package com.imcys.shiquzkarticledetaildemo.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.imcys.shiqulibrarydemo.base.BaseRecyclerViewAdapter
+import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.base.CommonViewHolder
 import com.imcys.shiquzkarticledetaildemo.databinding.ItemArticleDetailContentBinding
 import com.imcys.shiquzkarticledetaildemo.model.ArticleDetailData
@@ -12,7 +13,7 @@ class ArticleDetailContentAdapter :
 
     var dataList = listOf<ArticleDetailData.Content.SentenceByXF>()
 
-    val dyedIndex = -1
+    var dyedIndex = -1
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -33,10 +34,19 @@ class ArticleDetailContentAdapter :
         position: Int
     ) {
         val item = dataList[position]
+        val context = holder.itemView.context
         holder.binding.apply {
             // 3个步骤 1.替换空格 2.切割字符串 3.重新拼接并且添加分隔符
             itemArticleDetailText.text =
                 item.word.replace(Regex("\\s"), "").split("").joinToString(separator = " ")
+
+
+            if (dyedIndex != -1 && dyedIndex == holder.adapterPosition) {
+                itemArticleDetailText.setTextColor(context.resources.getColor(R.color.primary))
+            } else {
+                itemArticleDetailText.setTextColor(context.resources.getColor(R.color.black))
+            }
+
         }
     }
 }
