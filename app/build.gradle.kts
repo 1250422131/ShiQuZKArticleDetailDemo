@@ -39,6 +39,8 @@ android {
 }
 
 dependencies {
+    // brv
+    implementation("com.github.liangjingkanji:BRV:1.6.0")
     // flex
     implementation("com.google.android.flexbox:flexbox:3.0.0")
     // 媒体播放

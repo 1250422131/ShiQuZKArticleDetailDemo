@@ -1,22 +1,50 @@
 package com.imcys.shiquzkarticledetaildemo.ui.article.detail
 
+import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.forEach
+import androidx.core.view.get
 import androidx.fragment.app.Fragment
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.viewpager2.widget.ViewPager2
+import com.drake.brv.utils.linear
+import com.drake.brv.utils.setup
 import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.adapter.MainHomeFragmentAdapter
 import com.imcys.shiquzkarticledetaildemo.base.BaseActivity
 import com.imcys.shiquzkarticledetaildemo.databinding.ActivityArticleDetailBinding
+import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingInfo
+import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingType
 import org.koin.androidx.viewmodel.ext.android.viewModel
+
 
 class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
 
     private val viewModel: ArticleDetailViewModel by viewModel()
     private lateinit var viewPage2Adapter: MainHomeFragmentAdapter
+    private val gestureAnimator by lazy {
+        ObjectAnimator.ofFloat(
+            binding.articleDetailPageGestureImage,
+            "translationX",
+            -200f,
+            0f
+        ).apply {
+            duration = 2000
+            repeatCount = ObjectAnimator.INFINITE // 无限重复
+            repeatMode = ObjectAnimator.REVERSE // 反向重复
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,12 +79,18 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
         viewModel.articleDetailData.observe(this) {
             val fragments = mutableListOf<Fragment>()
             it.contentList.forEach { content ->
-                fragments.add(ArticleDetailContentFragment.newInstance(content,viewModel))
+                fragments.add(ArticleDetailContentFragment.newInstance(content, viewModel))
             }
             binding.apply {
                 viewPage2Adapter.fragments = fragments
                 viewPage2Adapter.notifyDataSetChanged()
                 articleDetailTitleTv.text = it.title
+            }
+        }
+
+        viewModel.currentPlayState.observe(this) { state ->
+            if (state == Player.STATE_ENDED) {
+                updateShowPageTip(true)
             }
         }
 
@@ -72,11 +106,98 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
 
     private fun initView() {
         initContent()
+        initSettingView()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun initSettingView() {
+        binding.apply {
+            (articlePlaySettingCard[0] as ConstraintLayout).forEach {
+                it.setOnTouchListener { view, motionEvent ->
+
+                    // 判断按下和放开
+                    if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                        val textView = it as TextView
+                        val drawable = textView.compoundDrawables[1]
+                        val wrappedDrawable = DrawableCompat.wrap(drawable)
+                        DrawableCompat.setTint(
+                            wrappedDrawable,
+                            resources.getColor(R.color.primary)
+                        )
+                        textView.setCompoundDrawablesWithIntrinsicBounds(
+                            null,
+                            wrappedDrawable,
+                            null,
+                            null
+                        )
+                        textView.setTextColor(resources.getColor(R.color.primary))
+
+                    } else if (motionEvent.action == MotionEvent.ACTION_UP) {
+
+                        val textView = it as TextView
+                        val drawable = textView.compoundDrawables[1]
+                        val wrappedDrawable = DrawableCompat.wrap(drawable)
+
+
+                        DrawableCompat.setTint(
+                            wrappedDrawable,
+                            resources.getColor(R.color.black)
+                        )
+
+                        textView.setCompoundDrawablesWithIntrinsicBounds(
+                            null,
+                            wrappedDrawable,
+                            null,
+                            null
+                        )
+                        textView.setTextColor(resources.getColor(R.color.black))
+
+                    }
+                    true
+                }
+
+
+                // 点击事件
+
+                it.setOnClickListener { view ->
+                    when (view.id) {
+                        R.id.article_play_setting_speed_model_tv -> {
+                            // 倍速播放
+                            val settingInfo = ArticleSettingInfo(
+                                title = "播放倍速",
+                                value = 1f,
+                                type = ArticleSettingType.SPEED,
+                                itemList = listOf()
+                            )
+
+                            articlePlayConfigCard.visibility = View.GONE
+                        }
+                    }
+
+                }
+
+
+            }
+        }
+    }
+
+
+    private fun updateShowPageTip(isShow: Boolean) {
+        binding.apply {
+            if (isShow) {
+                articleDetailPageTipGroup.visibility = View.VISIBLE
+                gestureAnimator.start()
+            } else {
+                articleDetailPageTipGroup.visibility = View.GONE
+                gestureAnimator.cancel()
+            }
+        }
     }
 
     private fun initContent() {
         binding.apply {
-            viewPage2Adapter = MainHomeFragmentAdapter(supportFragmentManager, lifecycle, listOf())
+            viewPage2Adapter =
+                MainHomeFragmentAdapter(supportFragmentManager, lifecycle, listOf())
             articleDetailVp2.adapter = viewPage2Adapter
             // 监听滚动
             articleDetailVp2.registerOnPageChangeCallback(object :
@@ -91,6 +212,8 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
                     viewModel.loadAudio(position)
                     // 更新当前页码
                     viewModel.updateCurrentPage(position)
+                    // 隐藏提示
+                    updateShowPageTip(false)
                 }
 
                 override fun onPageScrolled(

@@ -1,10 +1,10 @@
 package com.imcys.shiquzkarticledetaildemo.ui.article.detail
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.media3.common.Player
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
@@ -13,6 +13,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
+import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.adapter.ArticleDetailContentAdapter
 import com.imcys.shiquzkarticledetaildemo.base.BaseFragment
 import com.imcys.shiquzkarticledetaildemo.databinding.FragmentArticleDetailContentBinding
@@ -45,7 +46,7 @@ class ArticleDetailContentFragment(
     private fun bindLiveData() {
         viewModel.currentPlayerTime.observe(viewLifecycleOwner) { currentTime ->
             val dyedIndex =
-                content.sentenceByXFList.indexOfFirst  {
+                content.sentenceByXFList.indexOfFirst {
                     it.wb <= currentTime && it.we >= currentTime
                 }
             val oldIndex = articleDetailContentAdapter.dyedIndex
@@ -53,11 +54,56 @@ class ArticleDetailContentFragment(
             articleDetailContentAdapter.notifyItemChanged(oldIndex)
             articleDetailContentAdapter.notifyItemChanged(dyedIndex)
         }
+
+        viewModel.currentPlayWhenReady.observe(viewLifecycleOwner) { state ->
+            // 判断是否在播放
+            updateShowPlayState(state)
+        }
+
+        viewModel.currentPlayState.observe(viewLifecycleOwner) {
+            binding.apply {
+                if (it == Player.STATE_ENDED) {
+                    updateShowPlayState(false)
+                }
+            }
+        }
+    }
+
+
+    private fun updateShowPlayState(isPlay: Boolean) {
+
+        binding.apply {
+            if (isPlay) {
+                Glide.with(this@ArticleDetailContentFragment)
+                    .load(R.drawable.ic_read_details_replay_anim)
+                    .into(binding.articleDetailPlayStateImage)
+                binding.articleDetailPlayImage.setImageResource(R.drawable.ic_read_start_play)
+            } else {
+                articleDetailPlayStateImage.setImageResource(R.drawable.ic_read_details_replay)
+                articleDetailPlayImage.setImageResource(R.drawable.ic_read_pause_play)
+            }
+        }
     }
 
     private fun initView() {
         initContentRecyclerView()
         initContent()
+        initPlayerButton()
+    }
+
+    private fun initPlayerButton() {
+
+        binding.apply {
+
+            articleDetailPlayImage.setOnClickListener {
+                viewModel.playOrPauseAudio()
+            }
+
+            articleDetailPlayStateImage.setOnClickListener {
+                viewModel.playOrPauseAudio()
+            }
+
+        }
     }
 
     private fun initContentRecyclerView() {
