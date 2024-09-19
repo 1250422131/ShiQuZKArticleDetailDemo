@@ -17,6 +17,8 @@ import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager2.widget.ViewPager2
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
@@ -24,6 +26,7 @@ import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.adapter.MainHomeFragmentAdapter
 import com.imcys.shiquzkarticledetaildemo.base.BaseActivity
 import com.imcys.shiquzkarticledetaildemo.databinding.ActivityArticleDetailBinding
+import com.imcys.shiquzkarticledetaildemo.databinding.ItemArticlePlayConfigBinding
 import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingInfo
 import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingType
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -153,7 +156,7 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
                         textView.setTextColor(resources.getColor(R.color.black))
 
                     }
-                    true
+                    false
                 }
 
 
@@ -167,10 +170,41 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
                                 title = "播放倍速",
                                 value = 1f,
                                 type = ArticleSettingType.SPEED,
-                                itemList = listOf()
+                                itemList = listOf(
+                                    ArticleSettingInfo.ArticleSettingItemInfo(
+                                        name = "0.5倍速",
+                                        value = 0.5f
+                                    ),
+                                    ArticleSettingInfo.ArticleSettingItemInfo(
+                                        name = "1倍速",
+                                        value = 1f
+                                    ),
+                                    ArticleSettingInfo.ArticleSettingItemInfo(
+                                        name = "1.5倍速", value = 1.5f
+                                    )
+                                )
                             )
 
-                            articlePlayConfigCard.visibility = View.GONE
+                            articlePlayConfigCard.visibility = View.VISIBLE
+                            articlePlaySettingCard.visibility = View.GONE
+
+                            articlePlayConfigRv.linear().setup {
+                                addType<ArticleSettingInfo.ArticleSettingItemInfo<Float>>(R.layout.item_article_play_config)
+                                onBind {
+                                    val model =
+                                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
+                                    getBinding<ItemArticlePlayConfigBinding>().apply {
+                                        configNameTv.text = model.name
+                                    }
+                                }
+
+                                onClick(R.id.cardView) {
+
+                                }
+
+                            }.models = settingInfo.itemList
+                            articlePlayConfigRv.layoutManager = GridLayoutManager(this@ArticleDetailActivity, 3)
+
                         }
                     }
 
