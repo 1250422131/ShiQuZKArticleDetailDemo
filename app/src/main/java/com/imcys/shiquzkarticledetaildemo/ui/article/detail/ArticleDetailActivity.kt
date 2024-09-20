@@ -20,7 +20,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager2.widget.ViewPager2
+import com.drake.brv.utils.grid
 import com.drake.brv.utils.linear
+import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.adapter.MainHomeFragmentAdapter
@@ -105,11 +107,48 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
             binding.articleDetailProgressBar.progress = it + 1
         }
 
+        viewModel.currentArticleSpeedSetting.observe(this) {
+            binding.articlePlayConfigRv.models = it.itemList
+        }
+
     }
 
     private fun initView() {
         initContent()
         initSettingView()
+        initSpeedConfigRV()
+    }
+
+    private fun initSpeedConfigRV() {
+        binding.apply {
+            articlePlayConfigRv.grid(3).setup {
+                addType<ArticleSettingInfo.ArticleSettingItemInfo<Float>>(R.layout.item_article_play_config)
+                onBind {
+                    val model =
+                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
+                    getBinding<ItemArticlePlayConfigBinding>().apply {
+                        configNameTv.text = model.name
+                        if (model.value == viewModel.currentArticleSpeedSetting.value?.value) {
+                            configLy.setBackgroundColor(resources.getColor(R.color.primary))
+                            configNameTv.setTextColor(resources.getColor(R.color.white))
+                        } else {
+                            configLy.setBackgroundColor(Color.parseColor("#d9cfea"))
+                            configNameTv.setTextColor(resources.getColor(R.color.black))
+                        }
+                    }
+                }
+
+                onClick(R.id.cardView) {
+                    val model =
+                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
+                    val newModel =
+                        viewModel.currentArticleSpeedSetting.value?.copy(value = model.value)
+                    viewModel.updateCurrentArticleSetting(newModel)
+                }
+
+            }.models = viewModel.currentArticleSpeedSetting.value?.itemList
+
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -187,23 +226,6 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
 
                             articlePlayConfigCard.visibility = View.VISIBLE
                             articlePlaySettingCard.visibility = View.GONE
-
-                            articlePlayConfigRv.linear().setup {
-                                addType<ArticleSettingInfo.ArticleSettingItemInfo<Float>>(R.layout.item_article_play_config)
-                                onBind {
-                                    val model =
-                                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
-                                    getBinding<ItemArticlePlayConfigBinding>().apply {
-                                        configNameTv.text = model.name
-                                    }
-                                }
-
-                                onClick(R.id.cardView) {
-
-                                }
-
-                            }.models = settingInfo.itemList
-                            articlePlayConfigRv.layoutManager = GridLayoutManager(this@ArticleDetailActivity, 3)
 
                         }
                     }

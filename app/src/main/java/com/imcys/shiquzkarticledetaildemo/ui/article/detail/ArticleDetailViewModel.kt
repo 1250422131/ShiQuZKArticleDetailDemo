@@ -13,6 +13,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.imcys.shiquzkarticledetaildemo.http.retrofit.api.ShiQuArticleService
 import com.imcys.shiquzkarticledetaildemo.model.ArticleDetailData
+import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingInfo
+import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Timer
@@ -54,8 +56,35 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
     val currentSpeed: LiveData<Float>
         get() = _currentSpeed
 
+    private val _currentArticleSpeedSetting = MutableLiveData(
+        ArticleSettingInfo(
+            title = "播放倍速",
+            value = 1f,
+            type = ArticleSettingType.SPEED,
+            itemList = listOf(
+                ArticleSettingInfo.ArticleSettingItemInfo(
+                    name = "慢",
+                    value = 0.75f
+                ),
+                ArticleSettingInfo.ArticleSettingItemInfo(
+                    name = "标准",
+                    value = 1f
+                ),
+                ArticleSettingInfo.ArticleSettingItemInfo(
+                    name = "快", value = 1.5f
+                )
+            )
+        )
+    )
+
+    val currentArticleSpeedSetting: LiveData<ArticleSettingInfo<Float>>
+        get() = _currentArticleSpeedSetting
+
     private var exoPlayerTimer: Timer? = null
 
+    fun updateCurrentArticleSetting(articleSettingInfo: ArticleSettingInfo<Float>?) {
+        _currentArticleSpeedSetting.postValue(articleSettingInfo)
+    }
 
     @OptIn(UnstableApi::class)
     fun initExoPlayer(mExoPlayer: ExoPlayer) {
