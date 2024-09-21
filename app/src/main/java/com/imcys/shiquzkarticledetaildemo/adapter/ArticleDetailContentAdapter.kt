@@ -2,7 +2,7 @@ package com.imcys.shiquzkarticledetaildemo.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.imcys.shiqulibrarydemo.base.BaseRecyclerViewAdapter
+import com.imcys.shiquzkarticledetaildemo.base.BaseRecyclerViewAdapter
 import com.imcys.shiquzkarticledetaildemo.R
 import com.imcys.shiquzkarticledetaildemo.base.CommonViewHolder
 import com.imcys.shiquzkarticledetaildemo.databinding.ItemArticleDetailContentBinding
@@ -12,6 +12,8 @@ class ArticleDetailContentAdapter :
     BaseRecyclerViewAdapter<ItemArticleDetailContentBinding, ArticleDetailData.Content.SentenceByXF>() {
 
     var dataList = listOf<ArticleDetailData.Content.SentenceByXF>()
+
+    var textSize = 20
 
     var dyedIndex = -1
 
@@ -46,6 +48,8 @@ class ArticleDetailContentAdapter :
             } else {
                 itemArticleDetailText.setTextColor(context.resources.getColor(R.color.black))
             }
+
+            itemArticleDetailText.textSize = textSize.toFloat()
 
         }
     }

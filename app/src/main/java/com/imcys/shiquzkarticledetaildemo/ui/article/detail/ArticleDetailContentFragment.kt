@@ -18,6 +18,7 @@ import com.imcys.shiquzkarticledetaildemo.adapter.ArticleDetailContentAdapter
 import com.imcys.shiquzkarticledetaildemo.base.BaseFragment
 import com.imcys.shiquzkarticledetaildemo.databinding.FragmentArticleDetailContentBinding
 import com.imcys.shiquzkarticledetaildemo.model.ArticleDetailData
+import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingType
 
 
 class ArticleDetailContentFragment(
@@ -44,29 +45,41 @@ class ArticleDetailContentFragment(
     }
 
     private fun bindLiveData() {
-        viewModel.currentPlayerTime.observe(viewLifecycleOwner) { currentTime ->
-            val dyedIndex =
-                content.sentenceByXFList.indexOfFirst {
-                    it.wb <= currentTime && it.we >= currentTime
-                }
-            val oldIndex = articleDetailContentAdapter.dyedIndex
-            articleDetailContentAdapter.dyedIndex = dyedIndex
-            articleDetailContentAdapter.notifyItemChanged(oldIndex)
-            articleDetailContentAdapter.notifyItemChanged(dyedIndex)
-        }
+        viewModel.apply {
+            currentPlayerTime.observe(viewLifecycleOwner) { currentTime ->
+                val dyedIndex =
+                    content.sentenceByXFList.indexOfFirst {
+                        it.wb <= currentTime && it.we >= currentTime
+                    }
+                val oldIndex = articleDetailContentAdapter.dyedIndex
+                articleDetailContentAdapter.dyedIndex = dyedIndex
+                articleDetailContentAdapter.notifyItemChanged(oldIndex)
+                articleDetailContentAdapter.notifyItemChanged(dyedIndex)
+            }
 
-        viewModel.currentPlayWhenReady.observe(viewLifecycleOwner) { state ->
-            // 判断是否在播放
-            updateShowPlayState(state)
-        }
+            currentPlayWhenReady.observe(viewLifecycleOwner) { state ->
+                // 判断是否在播放
+                updateShowPlayState(state)
+            }
 
-        viewModel.currentPlayState.observe(viewLifecycleOwner) {
-            binding.apply {
-                if (it == Player.STATE_ENDED) {
-                    updateShowPlayState(false)
+            currentPlayState.observe(viewLifecycleOwner) {
+                binding.apply {
+                    if (it == Player.STATE_ENDED) {
+                        updateShowPlayState(false)
+                    }
                 }
             }
+
+            currentArticleSetting.observe(viewLifecycleOwner) {
+                if (it.type == ArticleSettingType.FONT_SIZE) {
+                    articleDetailContentAdapter.textSize = it.value as Int
+                    articleDetailContentAdapter.notifyDataSetChanged()
+                }
+            }
+
         }
+
+
     }
 
 
@@ -86,9 +99,25 @@ class ArticleDetailContentFragment(
     }
 
     private fun initView() {
+        // 初始化文章内容RV
         initContentRecyclerView()
+        // 初始化内容区域
         initContent()
+        // 初始化播放按钮
         initPlayerButton()
+        // 初始化设置点击区域 -> 点击后阅读设置出现
+        initSettingClickView()
+    }
+
+    private fun initSettingClickView() {
+        binding.apply {
+            articleDetailSettingView.setOnClickListener {
+                viewModel.showSettingState.value?.let {
+                    viewModel.updateShowSettingState(!it)
+                }
+
+            }
+        }
     }
 
     private fun initPlayerButton() {

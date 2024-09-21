@@ -17,11 +17,8 @@ import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager2.widget.ViewPager2
 import com.drake.brv.utils.grid
-import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.imcys.shiquzkarticledetaildemo.R
@@ -31,6 +28,8 @@ import com.imcys.shiquzkarticledetaildemo.databinding.ActivityArticleDetailBindi
 import com.imcys.shiquzkarticledetaildemo.databinding.ItemArticlePlayConfigBinding
 import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingInfo
 import com.imcys.shiquzkarticledetaildemo.model.ArticleSettingType
+import com.kongzue.dialogx.dialogs.WaitDialog
+import com.kongzue.dialogx.interfaces.OnBindView
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
@@ -63,6 +62,12 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
             insets
         }
 
+        WaitDialog.show("正在加载").setCustomView(object :
+            OnBindView<WaitDialog?>(R.layout.dialog_load) {
+            override fun onBind(dialog: WaitDialog?, v: View) {
+            }
+        })
+
         // 初始化播放器
         initExoPlayer()
 
@@ -81,54 +86,114 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
     }
 
     private fun bindLiveData() {
-        viewModel.articleDetailData.observe(this) {
-            val fragments = mutableListOf<Fragment>()
-            it.contentList.forEach { content ->
-                fragments.add(ArticleDetailContentFragment.newInstance(content, viewModel))
+
+        viewModel.apply {
+            articleDetailData.observe(this@ArticleDetailActivity) {
+                WaitDialog.dismiss()
+                val fragments = mutableListOf<Fragment>()
+                it.contentList.forEach { content ->
+                    fragments.add(ArticleDetailContentFragment.newInstance(content, viewModel))
+                }
+                binding.apply {
+                    viewPage2Adapter.fragments = fragments
+                    viewPage2Adapter.notifyDataSetChanged()
+                    articleDetailTitleTv.text = it.title
+                }
             }
-            binding.apply {
-                viewPage2Adapter.fragments = fragments
-                viewPage2Adapter.notifyDataSetChanged()
-                articleDetailTitleTv.text = it.title
+
+            currentPlayState.observe(this@ArticleDetailActivity) { state ->
+                if (state == Player.STATE_ENDED) {
+                    updateShowPageTip(true)
+                }
             }
-        }
-
-        viewModel.currentPlayState.observe(this) { state ->
-            if (state == Player.STATE_ENDED) {
-                updateShowPageTip(true)
+            currentPage.observe(this@ArticleDetailActivity) {
+                val totalPage = viewModel.articleDetailData.value?.contentList?.size ?: 0
+                binding.articleDetailPageProgressTv.text = "${it + 1} / $totalPage"
+                binding.articleDetailProgressBar.max = totalPage
+                binding.articleDetailProgressBar.progress = it + 1
             }
+
+            currentArticleSetting.observe(this@ArticleDetailActivity) {
+                binding.articlePlayConfigRv.models = it.itemList
+                binding.articlePlayConfigTitle.text = it.title
+                if (it.type == ArticleSettingType.SPEED) {
+                    viewModel.updateCurrentSpeed(it.value as Float)
+                    when (it.value) {
+                        1f -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_speed_1),
+                                null, null, null
+                            )
+                        }
+
+                        0.75f -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_speed_075),
+                                null, null, null
+                            )
+                        }
+
+                        1.25f -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_speed_125),
+                                null, null, null
+                            )
+                        }
+                    }
+                } else if (it.type == ArticleSettingType.FONT_SIZE) {
+                    when (it.value) {
+                        20 -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_read_setting_medium),
+                                null, null, null
+                            )
+                        }
+
+                        15 -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_read_setting_small),
+                                null, null, null
+                            )
+                        }
+
+                        25 -> {
+                            binding.articlePlayConfigTitle.setCompoundDrawablesWithIntrinsicBounds(
+                                getDrawable(R.drawable.icon_read_setting_big),
+                                null, null, null
+                            )
+                        }
+                    }
+                }
+            }
+
+            showSettingState.observe(this@ArticleDetailActivity) {
+                if (it) {
+                    binding.articlePlaySettingCard.visibility = View.VISIBLE
+                } else {
+                    binding.articlePlaySettingCard.visibility = View.GONE
+                }
+                binding.articlePlayConfigCard.visibility = View.GONE
+            }
+
         }
-
-
-        viewModel.currentPage.observe(this) {
-            val totalPage = viewModel.articleDetailData.value?.contentList?.size ?: 0
-            binding.articleDetailPageProgressTv.text = "${it + 1} / $totalPage"
-            binding.articleDetailProgressBar.max = totalPage
-            binding.articleDetailProgressBar.progress = it + 1
-        }
-
-        viewModel.currentArticleSpeedSetting.observe(this) {
-            binding.articlePlayConfigRv.models = it.itemList
-        }
-
     }
 
     private fun initView() {
         initContent()
         initSettingView()
-        initSpeedConfigRV()
+        initSettingConfigRV()
     }
 
-    private fun initSpeedConfigRV() {
+    private fun initSettingConfigRV() {
         binding.apply {
             articlePlayConfigRv.grid(3).setup {
                 addType<ArticleSettingInfo.ArticleSettingItemInfo<Float>>(R.layout.item_article_play_config)
                 onBind {
                     val model =
-                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
+                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Any>>()
                     getBinding<ItemArticlePlayConfigBinding>().apply {
                         configNameTv.text = model.name
-                        if (model.value == viewModel.currentArticleSpeedSetting.value?.value) {
+                        if (model.value == viewModel.currentArticleSetting.value?.value) {
                             configLy.setBackgroundColor(resources.getColor(R.color.primary))
                             configNameTv.setTextColor(resources.getColor(R.color.white))
                         } else {
@@ -139,14 +204,20 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
                 }
 
                 onClick(R.id.cardView) {
+//                    if (viewModel.currentArticleSetting.value?.type == ArticleSettingType.SPEED) {
+//
+//                    } else {
+//
+//                    }
+
                     val model =
-                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Float>>()
+                        getModel<ArticleSettingInfo.ArticleSettingItemInfo<Any>>()
                     val newModel =
-                        viewModel.currentArticleSpeedSetting.value?.copy(value = model.value)
+                        viewModel.currentArticleSetting.value?.copy(value = model.value)
                     viewModel.updateCurrentArticleSetting(newModel)
                 }
 
-            }.models = viewModel.currentArticleSpeedSetting.value?.itemList
+            }
 
         }
     }
@@ -204,31 +275,17 @@ class ArticleDetailActivity : BaseActivity<ActivityArticleDetailBinding>() {
                 it.setOnClickListener { view ->
                     when (view.id) {
                         R.id.article_play_setting_speed_model_tv -> {
-                            // 倍速播放
-                            val settingInfo = ArticleSettingInfo(
-                                title = "播放倍速",
-                                value = 1f,
-                                type = ArticleSettingType.SPEED,
-                                itemList = listOf(
-                                    ArticleSettingInfo.ArticleSettingItemInfo(
-                                        name = "0.5倍速",
-                                        value = 0.5f
-                                    ),
-                                    ArticleSettingInfo.ArticleSettingItemInfo(
-                                        name = "1倍速",
-                                        value = 1f
-                                    ),
-                                    ArticleSettingInfo.ArticleSettingItemInfo(
-                                        name = "1.5倍速", value = 1.5f
-                                    )
-                                )
-                            )
+                            viewModel.loadSpeedConfig()
+                        }
 
-                            articlePlayConfigCard.visibility = View.VISIBLE
-                            articlePlaySettingCard.visibility = View.GONE
-
+                        R.id.article_play_setting_font_size_model_tv -> {
+                            viewModel.loadFontSizeConfig()
                         }
                     }
+
+                    // 倍速播放
+                    articlePlayConfigCard.visibility = View.VISIBLE
+                    articlePlaySettingCard.visibility = View.GONE
 
                 }
 

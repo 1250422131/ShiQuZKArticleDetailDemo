@@ -51,39 +51,81 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
     val currentPlayState: LiveData<Int>
         get() = _currentPlayState
 
-    private val _currentSpeed = MutableLiveData(1f)
 
-    val currentSpeed: LiveData<Float>
-        get() = _currentSpeed
+    private val _currentArticleSetting = MutableLiveData<ArticleSettingInfo<Any>>()
 
-    private val _currentArticleSpeedSetting = MutableLiveData(
-        ArticleSettingInfo(
-            title = "播放倍速",
-            value = 1f,
-            type = ArticleSettingType.SPEED,
-            itemList = listOf(
-                ArticleSettingInfo.ArticleSettingItemInfo(
-                    name = "慢",
-                    value = 0.75f
-                ),
-                ArticleSettingInfo.ArticleSettingItemInfo(
-                    name = "标准",
-                    value = 1f
-                ),
-                ArticleSettingInfo.ArticleSettingItemInfo(
-                    name = "快", value = 1.5f
-                )
-            )
-        )
-    )
+    val currentArticleSetting: LiveData<ArticleSettingInfo<Any>>
+        get() = _currentArticleSetting
 
-    val currentArticleSpeedSetting: LiveData<ArticleSettingInfo<Float>>
-        get() = _currentArticleSpeedSetting
+    private val _showSettingState = MutableLiveData(false)
+
+    val showSettingState: LiveData<Boolean>
+        get() = _showSettingState
 
     private var exoPlayerTimer: Timer? = null
 
-    fun updateCurrentArticleSetting(articleSettingInfo: ArticleSettingInfo<Float>?) {
-        _currentArticleSpeedSetting.postValue(articleSettingInfo)
+
+    init {
+        loadSpeedConfig()
+        loadFontSizeConfig()
+    }
+
+    fun updateShowSettingState(isShow: Boolean) {
+        _showSettingState.postValue(isShow)
+    }
+
+    fun updateCurrentArticleSetting(articleSettingInfo: ArticleSettingInfo<Any>?) {
+        articleSettingInfo?.let {
+            _currentArticleSetting.postValue(it)
+        }
+    }
+
+
+    fun loadSpeedConfig() {
+        _currentArticleSetting.postValue(
+            ArticleSettingInfo(
+                title = "播放倍速",
+                value = 1f,
+                type = ArticleSettingType.SPEED,
+                itemList = listOf(
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "慢",
+                        value = 0.75f
+                    ),
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "标准",
+                        value = 1f
+                    ),
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "快", value = 1.25f
+                    )
+                )
+            )
+        )
+    }
+
+    fun loadFontSizeConfig() {
+        _currentArticleSetting.postValue(
+            ArticleSettingInfo(
+                title = "字体大小",
+                value = 20,
+                type = ArticleSettingType.FONT_SIZE,
+                itemList = listOf(
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "小",
+                        value = 15
+                    ),
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "标准",
+                        value = 20
+                    ),
+                    ArticleSettingInfo.ArticleSettingItemInfo(
+                        name = "大",
+                        value = 25
+                    )
+                )
+            )
+        )
     }
 
     @OptIn(UnstableApi::class)
@@ -110,8 +152,7 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
 
 
     fun updateCurrentSpeed(speed: Float) {
-        exoPlayer.playbackParameters = PlaybackParameters(speed)
-        _currentSpeed.postValue(speed)
+        exoPlayer.setPlaybackSpeed(speed)
     }
 
 
@@ -121,6 +162,7 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
         } else {
             if (_currentPlayState.value == Player.STATE_ENDED) {
                 // 重置播放
+                exoPlayer.pause()
                 exoPlayer.seekTo(0)
             }
             exoPlayer.play()
@@ -141,10 +183,7 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
         viewModelScope.launch(Dispatchers.IO) {
             exoPlayerTimer = fixedRateTimer("音频播放监控", false, 0, 10) {
                 viewModelScope.launch(Dispatchers.Main) {
-                    val initTime =
-                        _articleDetailData.value?.contentList?.get(audioIndex)?.sentenceByXFList?.first()?.wb
-                            ?: 0
-                    _currentPlayerTime.postValue(100 - initTime + exoPlayer.currentPosition.toInt())
+                     _currentPlayerTime.postValue( exoPlayer.currentPosition.toInt() - 10)
                 }
             }
         }
