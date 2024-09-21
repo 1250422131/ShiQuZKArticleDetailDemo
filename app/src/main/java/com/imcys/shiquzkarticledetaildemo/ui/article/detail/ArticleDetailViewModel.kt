@@ -7,7 +7,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -183,7 +182,7 @@ class ArticleDetailViewModel(private val shiQuArticleService: ShiQuArticleServic
         viewModelScope.launch(Dispatchers.IO) {
             exoPlayerTimer = fixedRateTimer("音频播放监控", false, 0, 10) {
                 viewModelScope.launch(Dispatchers.Main) {
-                     _currentPlayerTime.postValue( exoPlayer.currentPosition.toInt() - 10)
+                    _currentPlayerTime.postValue(exoPlayer.currentPosition.toInt() - 10)
                 }
             }
         }
